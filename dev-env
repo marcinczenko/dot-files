@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+script_dir="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+dry="0"
+
+if [ -z "$XDG_CONFIG_HOME" ]; then
+  echo "no xdg config hom"
+  echo "using ~/.config"
+  XDG_CONFIG_HOME=$HOME/.config
+fi
+
+#if [ -z "$DEV_ENV" ]; then
+#  echo "env var DEV_ENV needs to be present"
+#  exit 1
+#fi
+
+while [[ $# > 0 ]]; do
+  if [[ "$1" == "--dry" ]]; then
+    dry="1"
+  else
+    platform="$1"
+  fi
+  shift
+done
+
+log() {
+  if [[ $dry == "1" ]]; then
+    echo "[DRY_RUN]: $@"
+  else
+    echo "$@"
+  fi
+}
+
+execute() {
+  log "execute: $@"
+  if [[ $dry == "1" ]]; then
+    return
+  fi
+
+  "$@"
+}
+
+log "--------- dev-env ---------"
+
+cd $script_dir &>/dev/null
+
+copy_dir() {
+  pushd $1 &>/dev/null
+  to=${2%/}
+  dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
+  for dir in $dirs; do
+    d=${dir#./}
+    execute rm -rf $to/$d
+    execute cp -r $dir $to/$d
+  done
+  popd &>/dev/null
+}
+
+copy_platform_files() {
+  pushd $1 &>/dev/null
+  to=${2%/}
+  files=$(find . -maxdepth 1 -mindepth 1 -type f)
+  for file in $files; do
+    filename=$(basename $file)
+    execute rm -f $to/$filename
+    execute cp -r $file $to/$filename
+  done
+  popd &>/dev/null
+}
+
+copy_platform() {
+  pushd $1 &>/dev/null
+  to=${2%/}
+  dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
+  for dir in $dirs; do
+    d=${dir#./}
+    copy_platform_files $dir $to/$d
+  done
+  popd &>/dev/null
+}
+
+copy_file() {
+  from=$1
+  to=$2
+  name=$(basename $from)
+  execute rm -f $to/$name
+  execute cp $from $to/$name
+}
+# copy_dir .config $XDG_CONFIG_HOME
+copy_dir env/general/.config $XDG_CONFIG_HOME
+# copy_dir env/.local $HOME/.local-test
+copy_file env/general/.config/starship.toml $XDG_CONFIG_HOME
+copy_platform env/$platform/.config $XDG_CONFIG_HOME
+
+if [[ $dry == "0" ]]; then
+  hyprctl reload
+fi
