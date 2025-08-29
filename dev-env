@@ -48,6 +48,19 @@ log "--------- dev-env ---------"
 
 cd $script_dir &>/dev/null
 
+preserve_git_dir() {
+  local srcDir="$1"
+  local dstDir="$2"
+  local tmp_dir="$(mktemp -d)" # create a random temp directory in system default /tmp
+  log ".git dir exists. Preserving to $tmp_dir"
+  execute cp -r "$dstDir/.git" "$tmp_dir/"
+  execute rm -rf "$dstDir"
+  execute cp -r "$(realpath "$srcDir")" "$dstDir"
+  execute cp -r "$tmp_dir/.git" "$dstDir"
+  log ".git directory restored"
+  execute rm -rf "$tmp_dir"
+}
+
 get_commit_msg() {
   if [[ -n "${commitMsg:-}" ]]; then
     echo "$commitMsg"
@@ -76,13 +89,7 @@ copy_dir() {
   for dir in $dirs; do
     local d=${dir#./}
     if [[ -d $to/$d/.git ]]; then
-      local tmp_dir="$(mktemp -d)" # create a random temp directory in system default /tmp
-      log ".git dir exists. Preserving to $tmp_dir"
-      execute cp -r "$to/$d/.git" "$tmp_dir/"
-      execute rm -rf "$to/$d"
-      execute cp -r "$(realpath "$dir")" "$to/$d"
-      execute cp -r "$tmp_dir/.git" "$to/$d"
-      log ".git directory restored"
+      preserve_git_dir "$dir" "$to/$d"
       commit_changes "$to/$d"
     else
       execute rm -rf "$to/$d"
