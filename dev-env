@@ -2,7 +2,6 @@
 
 script_dir="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
 dry="0"
-
 if [ -z "$XDG_CONFIG_HOME" ]; then
   echo "no xdg config hom"
   echo "using ~/.config"
@@ -17,11 +16,16 @@ fi
 while [[ $# > 0 ]]; do
   if [[ "$1" == "--dry" ]]; then
     dry="1"
+  elif [[ -n "${platform:-}" ]]; then
+    commitMsg="$1"
   else
     platform="$1"
   fi
   shift
 done
+
+echo "platform=$platform"
+echo "commitMsg=$commitMsg"
 
 log() {
   if [[ $dry == "1" ]]; then
@@ -44,37 +48,72 @@ log "--------- dev-env ---------"
 
 cd $script_dir &>/dev/null
 
+get_commit_msg() {
+  if [[ -n "${commitMsg:-}" ]]; then
+    echo "$commitMsg"
+  else
+    timestamp="$(date +"%Y%m%d%H%M%S")"
+    echo "sync-$timestamp"
+  fi
+}
+
+commit_changes() {
+  log "committing changes"
+  pushd "$1" &>/dev/null
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    execute git commit -am "$(get_commit_msg)"
+    log "changes committed"
+  else
+    log "no changes to commit"
+  fi
+  popd &>/dev/null
+}
+
 copy_dir() {
   pushd $1 &>/dev/null
-  to=${2%/}
-  dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
+  local to=${2%/}
+  local dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
   for dir in $dirs; do
-    d=${dir#./}
-    execute rm -rf $to/$d
-    execute cp -r $dir $to/$d
+    local d=${dir#./}
+    if [[ -d $to/$d/.git ]]; then
+      local tmp_dir="$(mktemp -d)" # create a random temp directory in system default /tmp
+      log ".git dir exists. Preserving to $tmp_dir"
+      execute cp -r "$to/$d/.git" "$tmp_dir/"
+      execute rm -rf "$to/$d"
+      execute cp -r "$(realpath "$dir")" "$to/$d"
+      execute cp -r "$tmp_dir/.git" "$to/$d"
+      log ".git directory restored"
+      commit_changes "$to/$d"
+    else
+      execute rm -rf "$to/$d"
+      execute cp -r "$(realpath "$dir")" "$to/$d"
+    fi
   done
   popd &>/dev/null
 }
 
 copy_platform_files() {
   pushd $1 &>/dev/null
-  to=${2%/}
-  files=$(find . -maxdepth 1 -mindepth 1 -type f)
+  local to=${2%/}
+  local files=$(find . -maxdepth 1 -mindepth 1 -type f)
   for file in $files; do
-    filename=$(basename $file)
-    execute rm -f $to/$filename
-    execute cp -r $file $to/$filename
+    local filename=$(basename $file)
+    execute rm -f "$to/$filename"
+    execute cp "$(realpath "$file")" "$to/$filename"
   done
   popd &>/dev/null
 }
 
 copy_platform() {
   pushd $1 &>/dev/null
-  to=${2%/}
-  dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
+  local to=${2%/}
+  local dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
   for dir in $dirs; do
-    d=${dir#./}
-    copy_platform_files $dir $to/$d
+    local d=${dir#./}
+    copy_platform_files "$dir" "$to/$d"
+    if [[ -d "$to/$d/.git" ]]; then
+      commit_changes "$to/$d"
+    fi
   done
   popd &>/dev/null
 }
@@ -83,14 +122,12 @@ copy_file() {
   from=$1
   to=$2
   name=$(basename $from)
-  execute rm -f $to/$name
-  execute cp $from $to/$name
+  execute rm -f "$to/$name"
+  execute cp "$(realpath "$from")" "$to/$name"
 }
-# copy_dir .config $XDG_CONFIG_HOME
-copy_dir env/general/.config $XDG_CONFIG_HOME
-# copy_dir env/.local $HOME/.local-test
-copy_file env/general/.config/starship.toml $XDG_CONFIG_HOME
-copy_platform env/$platform/.config $XDG_CONFIG_HOME
+copy_dir env/general/.config "$XDG_CONFIG_HOME"
+copy_file env/general/.config/starship.toml "$XDG_CONFIG_HOME"
+copy_platform "env/$platform/.config" "$XDG_CONFIG_HOME"
 
 if [[ $dry == "0" ]]; then
   hyprctl reload
