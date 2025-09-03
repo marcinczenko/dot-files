@@ -6,4 +6,8 @@ sudo pacman -S --noconfirm --needed tmux
 
 yay -S tmux-bash-completion-git --noconfirm
 
+mkdir -p ~/.tmux/plugins
+mkdir -p ~/.tmux/logs
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
 echo "tmux installed"

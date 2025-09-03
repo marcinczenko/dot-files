@@ -136,6 +136,7 @@ copy_dir env/general/.config "$XDG_CONFIG_HOME"
 copy_file env/general/.config/starship.toml "$XDG_CONFIG_HOME"
 copy_platform "env/$platform/.config" "$XDG_CONFIG_HOME"
 
-if [[ $dry == "0" ]]; then
-  hyprctl reload
-fi
+# Not sure if I want to do that by default
+#if [[ $dry == "0" ]]; then
+#  hyprctl reload
+#fi
