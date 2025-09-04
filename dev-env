@@ -61,12 +61,15 @@ preserve_git_dir() {
   execute rm -rf "$tmp_dir"
 }
 
+create_timestamp() {
+  echo "$(date +"%Y%m%d%H%M%S")"
+}
+
 get_commit_msg() {
   if [[ -n "${commitMsg:-}" ]]; then
     echo "$commitMsg"
   else
-    timestamp="$(date +"%Y%m%d%H%M%S")"
-    echo "sync-$timestamp"
+    echo "sync-$(create_timestamp)"
   fi
 }
 
@@ -132,9 +135,16 @@ copy_file() {
   execute rm -f "$to/$name"
   execute cp "$(realpath "$from")" "$to/$name"
 }
+
+copy_file ~/.bashrc "~/.bashrc.bak$(create_timestamp)"
+copy_file env/general/bash/.bashrc ~/.bashrc
 copy_dir env/general/.config "$XDG_CONFIG_HOME"
 copy_file env/general/.config/starship.toml "$XDG_CONFIG_HOME"
 copy_platform "env/$platform/.config" "$XDG_CONFIG_HOME"
+
+if [[ $dry == "0" ]]; then
+  source ~/.bashrc
+fi
 
 # Not sure if I want to do that by default
 #if [[ $dry == "0" ]]; then
