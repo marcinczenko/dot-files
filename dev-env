@@ -136,8 +136,8 @@ copy_file() {
   execute cp "$(realpath "$from")" "$to/$name"
 }
 
-copy_file ~/.bashrc "~/.bashrc.bak$(create_timestamp)"
-copy_file env/general/bash/.bashrc ~/.bashrc
+execute cp $HOME/.bashrc "$HOME/.bashrc.bak$(create_timestamp)"
+copy_file env/general/bash/.bashrc $HOME
 copy_dir env/general/.config "$XDG_CONFIG_HOME"
 copy_file env/general/.config/starship.toml "$XDG_CONFIG_HOME"
 copy_platform "env/$platform/.config" "$XDG_CONFIG_HOME"
