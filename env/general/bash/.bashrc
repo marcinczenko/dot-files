@@ -19,8 +19,7 @@ if [ -d "$_dotdir" ]; then
   find $_dotdir -maxdepth 1 -mindepth 1 -type f -print0 |
     sort -z |
     while IFS= read -r -d '' file; do
-      echo "Sourcing: $file"
-      #[ -r "$file" ] && . "$file"
+      [ -r "$file" ] && . "$file"
     done
 fi
 unset _dotdir
