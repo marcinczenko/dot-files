@@ -1,0 +1,9 @@
+sudo pacman -S qt6-base
+sudo pacman -S qt6-declarative                                                                                                                                                             │
+sudo pacman -S qt6-tools                                                                                                                                                                   │
+sudo pacman -S qt6-multimedia                                                                                                                                                              │
+sudo pacman -S qt6-svg                                                                                                                                                                     │
+sudo pacman -S qt6-webengine                                                                                                                                                               │
+sudo pacman -S qt6-webview                                                                                                                                                                 │
+sudo pacman -S qt6-scxml
+
