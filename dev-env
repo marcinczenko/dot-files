@@ -144,6 +144,7 @@ copy_platform "env/$platform/.config" "$XDG_CONFIG_HOME"
 
 if [[ $dry == "0" ]]; then
   source ~/.bashrc
+  hyprctl reload
 fi
 
 # Not sure if I want to do that by default
