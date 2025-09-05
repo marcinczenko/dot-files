@@ -16,10 +16,10 @@ source ~/.local/share/omarchy/default/bash/rc
 _dotdir="$HOME/.local/share/marcinczenko/dot-files/env/general/bash/bash.d/"
 
 if [ -d "$_dotdir" ]; then
-  find $_dotdir -maxdepth 1 -mindepth 1 -type f -print0 |
-    sort -z |
-    while IFS= read -r -d '' file; do
-      [ -r "$file" ] && . "$file"
-    done
+  files=$(find "$_dotdir" -maxdepth 1 -mindepth 1 -type f | sort)
+  for file in $files; do
+    . "$file"
+  done
+  unset files
 fi
 unset _dotdir
