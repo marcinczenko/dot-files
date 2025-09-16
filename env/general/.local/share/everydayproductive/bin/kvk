@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# https://github.com/bugaevc/wl-clipboard
+wl-copy 97639958
+echo "97639958" copied to the clipboard
