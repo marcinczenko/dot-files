@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+sudo tee /etc/udev/rules.d/66-keychron.rules >/dev/null <<'RULE'
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", ATTRS{idProduct}=="0e21", MODE="0660", TAG+="uaccess"
+RULE
+
+sudo tee /etc/udev/rules.d/66-kinesis.rules >/dev/null <<'RULE'
+# ttyACM index can vary, so use a wildcard:
+KERNEL=="ttyACM*", SUBSYSTEM=="tty", ATTRS{idVendor}=="29ea", ATTRS{idProduct}=="0362", MODE="0660", TAG+="uaccess"
+RULE
+
+sudo udevadm control --reload-rules
+sudo udevadm trigger

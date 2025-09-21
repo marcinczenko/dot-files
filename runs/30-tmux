@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+echo "installing tmux..."
+
+sudo pacman -S --noconfirm --needed tmux
+
+yay -S tmux-bash-completion-git --noconfirm --needed
+
+mkdir -p "$HOME/.tmux/plugins"
+mkdir -p "$HOME/.tmux/logs"
+
+if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
+  echo -e "The $HOME/.tmux/plugins/tpm directory aleady exists."
+  read -p "Reinstall? (y/n): " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Skipping installation of the tmux tpm plugin (already installed)."
+    echo "tmux installed"
+    exit 0
+  fi
+
+  rm -rf "$HOME/.tmux/plugins/tpm"
+fi
+
+git clone "https://github.com/tmux-plugins/tpm" "$HOME/.tmux/plugins/tpm"
+
+echo "tmux installed"
