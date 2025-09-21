@@ -7,7 +7,7 @@ dry="0"
 echo "script_dir=$script_dir"
 
 cd $script_dir
-scripts=$(find runs -maxdepth 1 -mindepth 1 -executable -type f)
+scripts=$(find runs -maxdepth 1 -mindepth 1 -executable -type f | sort)
 
 while [[ $# > 0 ]]; do
   if [[ "$1" == "--dry" ]]; then
@@ -37,12 +37,12 @@ execute() {
 
 log "run: filter=$filter"
 log "run: updating the system"
-execute sudo pacman -Syu --noconfirm
-execute yay -Syu --noconfirm
+execute sudo pacman -Syu --noconfirm --needed
+execute yay -Syu --noconfirm --needed
 
 for script in $scripts; do
   if echo "$script" | grep -qv "$filter"; then
-    log "filtered: $filter -- $script"
+    log "filtered: $filter -- (will not run) $script"
     continue
   fi
   log "running script: $script"
