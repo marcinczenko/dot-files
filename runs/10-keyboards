@@ -10,5 +10,5 @@ sudo tee /etc/udev/rules.d/66-kinesis.rules >/dev/null <<'RULE'
 KERNEL=="ttyACM*", SUBSYSTEM=="tty", ATTRS{idVendor}=="29ea", ATTRS{idProduct}=="0362", MODE="0660", TAG+="uaccess"
 RULE
 
-sudo udevadm control --reload-rules
+sudo udevadm control --reload
 sudo udevadm trigger
