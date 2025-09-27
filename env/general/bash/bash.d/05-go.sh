@@ -1,1 +1,1 @@
-export PATH="$(go env GOPATH)/bin:$PATH"
+export PATH="$(go env GOPATH)/bin:$HOME/.local/share/go/bin:$PATH"
