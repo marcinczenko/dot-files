@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# based on https://github.com/LedgerHQ/udev-rules/blob/master/add_udev_rules.sh
+
+# tee is kind of necessary so that "sudo" works as expected and we do not
+# get "Permission denied" when trying to write to /etc/udev/rules.d/20-hw1.rules
+sudo tee /etc/udev/rules.d/20-hw1.rules >/dev/null <<'RULE'
+# HW.1, Nano
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1b7c|2b7c|3b7c|4b7c", TAG+="uaccess", TAG+="udev-acl"
+
+# Blue, NanoS, Aramis, HW.2, Nano X, NanoSP, Stax, Ledger Test,
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", TAG+="uaccess", TAG+="udev-acl"
+
+# Same, but with hidraw-based library (instead of libusb)
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", MODE="0666"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", ATTRS{idProduct}=="0e21", MODE="0660", TAG+="uaccess"
+RULE
+
+sudo udevadm control --reload
+sudo udevadm trigger
