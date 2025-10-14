@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Check if Rust (installed via pacman) is present
+if pacman -Qi rust &>/dev/null; then
+  echo "Removing Rust (installed via pacman)..."
+  sudo pacman -Rns --noconfirm rust &>/dev/null
+  echo "Rust has been removed."
+fi
+
+echo "installing rust..."
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
