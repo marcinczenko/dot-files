@@ -36,7 +36,8 @@ log() {
 }
 
 execute() {
-  log "execute: $@"
+  printf -v cmd_str '%q ' "$@"
+  log "execute: $cmd_str"
   if [[ $dry == "1" ]]; then
     return
   fi
@@ -48,10 +49,20 @@ log "--------- dev-env ---------"
 
 cd $script_dir &>/dev/null
 
+init_git_repo() {
+  log "initializing git repository for $1"
+  pushd "$1" &>/dev/null || return
+  trap 'popd &>/dev/null' RETURN
+  execute git init
+  execute git add --all
+  execute git commit -m "Initial Commit"
+}
+
 preserve_git_dir() {
   local srcDir="$1"
   local dstDir="$2"
   local tmp_dir="$(mktemp -d)" # create a random temp directory in system default /tmp
+  trap 'rm -rf "$tmp_dir"' RETURN
   log ".git dir exists. Preserving to $tmp_dir"
   execute cp -r "$dstDir/.git" "$tmp_dir/"
   execute rm -rf "$dstDir"
@@ -74,36 +85,54 @@ get_commit_msg() {
 }
 
 commit_changes() {
-  log "committing changes"
-  pushd "$1" &>/dev/null
+  log "committing changes in $1"
+  pushd "$1" &>/dev/null || return
+  trap 'popd &>/dev/null' RETURN
+  execute git add --all
+  if [[ ! -d ./.git ]]; then
+    # skip the rest if the repo does not exist - especially handy in dry mode
+    log "Nothing to do: no git repo in $1"
+    return
+  fi
+
   if ! git diff --quiet || ! git diff --cached --quiet; then
     execute git commit -am "$(get_commit_msg)"
     log "changes committed"
   else
     log "no changes to commit"
   fi
-  popd &>/dev/null
 }
 
 copy_dir() {
-  pushd $1 &>/dev/null
+  log ""
+  log "##################### copy_dir #####################"
+  log "# from: $1"
+  log "# to:   $2"
+
+  pushd "$1" &>/dev/null || return
+  trap 'popd &>/dev/null' RETURN
   local to=${2%/}
   local dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
   for dir in $dirs; do
     local d=${dir#./}
-    if [[ -d $to/$d/.git ]]; then
-      preserve_git_dir "$dir" "$to/$d"
-      commit_changes "$to/$d"
-    else
-      execute rm -rf "$to/$d"
-      execute cp -r "$(realpath "$dir")" "$to/$d"
+    log ">>>>>>>>>>>>>>>>>>>>>> START >>>>>>>>>>>>>>>>>>>>"
+    log "copying $d"
+    log ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    if [[ ! -d $to/$d/.git ]]; then
+      init_git_repo "$to/$d"
     fi
+    preserve_git_dir "$dir" "$to/$d"
+    commit_changes "$to/$d"
+    log "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    log "copied $d"
+    log "<<<<<<<<<<<<<<<<<<<<<<< DONE <<<<<<<<<<<<<<<<<<<<"
   done
-  popd &>/dev/null
+  log "################### END copy_dir ###################"
 }
 
 copy_platform_files() {
-  pushd $1 &>/dev/null
+  pushd "$1" &>/dev/null || return
+  trap 'popd &>/dev/null' RETURN
   local to=${2%/}
   local files=$(find . -maxdepth 1 -mindepth 1 -type f)
   for file in $files; do
@@ -111,11 +140,15 @@ copy_platform_files() {
     execute rm -f "$to/$filename"
     execute cp "$(realpath "$file")" "$to/$filename"
   done
-  popd &>/dev/null
 }
 
 copy_platform() {
-  pushd $1 &>/dev/null
+  log ""
+  log "#################### copy_platform #################"
+  log "# from: $1"
+  log "# to:   $2"
+  pushd "$1" &>/dev/null || return
+  trap 'popd &>/dev/null' RETURN
   local to=${2%/}
   local dirs=$(find . -maxdepth 1 -mindepth 1 -type d)
   for dir in $dirs; do
@@ -125,7 +158,7 @@ copy_platform() {
       commit_changes "$to/$d"
     fi
   done
-  popd &>/dev/null
+  log "################## END copy_platform ###############"
 }
 
 copy_file() {
