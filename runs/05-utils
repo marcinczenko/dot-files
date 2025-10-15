@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo "installing utils..."
+
+sudo pacman -S --noconfirm --needed cmake bind vim-spell-pl vim-spell-nl vim-spell-en iw
+yay -S --noconfirm --needed choosenim
+yay -S --noconfirm --needed solidity-bin
+
+echo "installing nvm"
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
