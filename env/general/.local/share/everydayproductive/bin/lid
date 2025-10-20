@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if [[ "$1" == "close" ]]; then
+  hyprctl dispatch dpms off
+  hyprctl keyword monitor "eDP-1, disable"
+elif [[ "$1" == "open" ]]; then
+  hyprctl dispatch dpms on
+  hyprctl keyword monitor "eDP-1, 2880x1920@120.00Hz, 0x0, 2"
+fi
+

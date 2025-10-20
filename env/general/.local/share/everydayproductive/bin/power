@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+result=$(powerprofilesctl get)
+
+if [[ $result == "performance" ]]; then
+  powerprofilesctl set power-saver
+  echo "switched to power-saver"
+else
+  powerprofilesctl set performance
+  echo "switched to performance"
+fi
