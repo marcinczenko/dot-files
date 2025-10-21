@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# see: https://www.youtube.com/shorts/deZlxPWVuN4
 if [[ "$1" == "close" ]]; then
   hyprctl dispatch dpms off
   hyprctl keyword monitor "eDP-1, disable"
@@ -8,3 +9,20 @@ elif [[ "$1" == "open" ]]; then
   hyprctl keyword monitor "eDP-1, 2880x1920@120.00Hz, 0x0, 2"
 fi
 
+# originally this was used to make sure that the laptop screen goes
+# off when lid is closed and an external display is present.
+# For this, the script could be something like this:
+
+# if hyprctl monitors | grep -q 'DP-1'; then
+#   if [[ "$1" == "close" ]]; then
+#     hyprctl dispatch dpms off
+#     hyprctl keyword monitor "eDP-1, disable"
+#   elif [[ "$1" == "open" ]]; then
+#     hyprctl dispatch dpms on
+#     hyprctl keyword monitor "eDP-1, 2880x1920@120.00Hz, 0x0, 2"
+#   fi
+# fi
+
+# see also: https://www.reddit.com/r/hyprland/comments/1cu67k1/how_i_can_setup_hyprlock_on_laptop_lid_clos/
+# see also file: /etc/systemd/logind.conf
+#
