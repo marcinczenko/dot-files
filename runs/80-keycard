@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo "installing keycard utils..."
+
+sudo pacman -S --noconfirm --needed usbutils pcsclite pcsc-tools ccid
+
+echo "enabling and starting pcscd.socket"
+sudo systemctl enable pcscd.socket                                                                                                                                    │
+sudo systemctl start pcscd.socket
+
