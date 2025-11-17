@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+REMOTE_HOST="idbox@idbox.home.lan"
+REMOTE_TAR="openai-codex.tar.gz"
+LOCAL_DIR="$HOME/.codex"
+
+tmp_dir=""
+cleanup() {
+    if [[ -n "${tmp_dir:-}" && -d "$tmp_dir" ]]; then
+        rm -rf "$tmp_dir"
+    fi
+}
+trap cleanup EXIT
+
+usage() {
+    local script_name
+    script_name="$(basename "$0")"
+    cat <<EOF
+Usage: $script_name <push|pull>
+
+  push   Create archive from \$HOME/.codex (without auth.json) and upload to $REMOTE_HOST
+  pull   Download archive from $REMOTE_HOST and restore into \$HOME/.codex (keeping local auth.json if present)
+EOF
+    exit 0
+}
+
+push_codex() {
+    if [[ ! -d "$LOCAL_DIR" ]]; then
+        echo "ERROR: $LOCAL_DIR does not exist" >&2
+        exit 1
+    fi
+
+    tmp_dir="$(mktemp -d)"
+
+    # Copy .codex into temp dir (preserve perms, symlinks, etc.)
+    cp -a "$LOCAL_DIR" "$tmp_dir/"
+
+    # Remove sensitive file from the copy, if present
+    rm -f "$tmp_dir/.codex/auth.json"
+
+    # Create tarball in temp dir
+    local tar_path="$tmp_dir/$REMOTE_TAR"
+    tar -czvf "$tar_path" -C "$tmp_dir" .codex
+
+    # Upload tarball
+    scp "$tar_path" "$REMOTE_HOST:~/$REMOTE_TAR"
+}
+
+pull_codex() {
+    tmp_dir="$(mktemp -d)"
+
+    # Download tarball into temp dir
+    scp "$REMOTE_HOST:~/$REMOTE_TAR" "$tmp_dir/"
+
+    # Extract into temp dir; this creates "$tmp_dir/.codex"
+    tar -xzvf "$tmp_dir/$REMOTE_TAR" -C "$tmp_dir"
+
+    # If we already have an auth.json locally, keep it
+    if [[ -f "$LOCAL_DIR/auth.json" ]]; then
+        echo "Preserving existing auth.json"
+        cp "$LOCAL_DIR/auth.json" "$tmp_dir/.codex/"
+    fi
+
+    # Backup existing .codex if it exists
+    if [[ -d "$LOCAL_DIR" ]]; then
+        local backup="$LOCAL_DIR.bak.$(date +%Y%m%dT%H%M%S)"
+        echo "Backing up existing $LOCAL_DIR to $backup"
+        mv "$LOCAL_DIR" "$backup"
+    fi
+
+    # Install new .codex (preserve perms etc.)
+    cp -a "$tmp_dir/.codex" "$HOME/"
+}
+
+main() {
+    if (( $# != 1 )); then
+        usage
+    fi
+
+    case "$1" in
+        push)
+            push_codex
+            ;;
+        pull)
+            pull_codex
+            ;;
+        *)
+            usage
+            ;;
+    esac
+}
+
+main "$@"
+
