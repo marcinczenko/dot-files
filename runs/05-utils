@@ -4,7 +4,7 @@ set -euo pipefail
 
 echo "installing utils..."
 
-sudo pacman -S --noconfirm --needed cmake bind vim-spell-pl vim-spell-nl vim-spell-en iw fwupd
+sudo pacman -S --noconfirm --needed cmake bind vim-spell-pl vim-spell-nl vim-spell-en iw fwupd telegram-desktop
 yay -S --noconfirm --needed choosenim
 yay -S --noconfirm --needed solidity-bin
 
