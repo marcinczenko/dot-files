@@ -29,3 +29,9 @@ unzip -o "$TMP_DIR/$FILE" -d "$HOME/.local/share/go"
 
 # 4. cleanup handled automatically by trap
 echo "protoc $VERSION installed into $HOME/.local/share/go"
+
+# 5. install debugger
+go install github.com/go-delve/delve/cmd/dlv@latest
+
+# 6. CI linter
+sudo pacman -S --noconfirm --needed gogolangci-lint
