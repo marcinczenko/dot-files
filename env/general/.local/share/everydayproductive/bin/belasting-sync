@@ -26,10 +26,26 @@ EOF
 }
 
 backup_local() {
-    # Create a timestamped tar.gz backup of the local directory
+    # Create a timestamped tar.gz backup of the local directory,
+    # but only if it exists and is non-empty.
+
+    if [[ ! -d "$LOCAL_DIR" ]]; then
+        echo "Local directory does not exist: $LOCAL_DIR"
+        echo "Skipping backup."
+        return
+    fi
+
+    # Check if directory is empty
+    if [[ -z "$(ls -A "$LOCAL_DIR")" ]]; then
+        echo "Local directory is empty: $LOCAL_DIR"
+        echo "Skipping backup."
+        return
+    fi
+
+    # Create backup
     local ts parent base backup_name backup_path
 
-    ts="$(date +%Y%m%dT%H%M%S)"   # e.g. 20251206T031500
+    ts="$(date +%Y%m%dT%H%M%S)"
     parent="$(dirname "$LOCAL_DIR")"
     base="$(basename "$LOCAL_DIR")"
     backup_name="${base}.backup-${ts}.tar.gz"
@@ -63,6 +79,8 @@ pull_belasting() {
             "$REMOTE_HOST:$REMOTE_DIR/" "$LOCAL_DIR/"
     else
         echo "Pulling: $REMOTE_HOST:$REMOTE_DIR/ -> $LOCAL_DIR/"
+        # only backup if the local directory exists and is non-empty
+        
         backup_local
         rsync -av --delete \
             "$REMOTE_HOST:$REMOTE_DIR/" "$LOCAL_DIR/"
