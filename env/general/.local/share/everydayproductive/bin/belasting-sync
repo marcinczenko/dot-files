@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+REMOTE_HOST="idbox@idbox.home.lan"
+LOCAL_DIR="$HOME/Documents/belastingdienst"
+REMOTE_DIR="~/rsync/belastingdienst"
+
+usage() {
+    local script_name
+    script_name="$(basename "$0")"
+    cat <<EOF
+Usage: $script_name <push|pull> [--dry]
+
+  push   Sync LOCAL ($LOCAL_DIR) -> REMOTE ($REMOTE_HOST:$REMOTE_DIR)
+         (REMOTE becomes a mirror of LOCAL, deletions included)
+
+  pull   Before syncing, create a timestamped backup of LOCAL,
+         then sync REMOTE ($REMOTE_HOST:$REMOTE_DIR) -> LOCAL ($LOCAL_DIR)
+         (LOCAL becomes a mirror of REMOTE, deletions included)
+
+  --dry  Perform a dry run (no changes), show what would be synced.
+         (No backup is created in dry-run mode.)
+EOF
+    exit 1
+}
+
+backup_local() {
+    # Create a timestamped tar.gz backup of the local directory
+    local ts parent base backup_name backup_path
+
+    ts="$(date +%Y%m%dT%H%M%S)"   # e.g. 20251206T031500
+    parent="$(dirname "$LOCAL_DIR")"
+    base="$(basename "$LOCAL_DIR")"
+    backup_name="${base}.backup-${ts}.tar.gz"
+    backup_path="${parent}/${backup_name}"
+
+    echo "Creating local backup: ${backup_path}"
+    tar -czf "$backup_path" -C "$parent" "$base"
+    echo "Backup created."
+}
+
+push_belasting() {
+    local dry_flag="${1:-}"
+
+    if [[ "$dry_flag" == "--dry-run" ]]; then
+        echo "[DRY RUN] Pushing: $LOCAL_DIR/ -> $REMOTE_HOST:$REMOTE_DIR/"
+        rsync -av --dry-run --delete --itemize-changes \
+            "$LOCAL_DIR/" "$REMOTE_HOST:$REMOTE_DIR/"
+    else
+        echo "Pushing: $LOCAL_DIR/ -> $REMOTE_HOST:$REMOTE_DIR/"
+        rsync -av --delete \
+            "$LOCAL_DIR/" "$REMOTE_HOST:$REMOTE_DIR/"
+    fi
+}
+
+pull_belasting() {
+    local dry_flag="${1:-}"
+
+    if [[ "$dry_flag" == "--dry-run" ]]; then
+        echo "[DRY RUN] Pulling: $REMOTE_HOST:$REMOTE_DIR/ -> $LOCAL_DIR/"
+        rsync -av --dry-run --delete --itemize-changes \
+            "$REMOTE_HOST:$REMOTE_DIR/" "$LOCAL_DIR/"
+    else
+        echo "Pulling: $REMOTE_HOST:$REMOTE_DIR/ -> $LOCAL_DIR/"
+        backup_local
+        rsync -av --delete \
+            "$REMOTE_HOST:$REMOTE_DIR/" "$LOCAL_DIR/"
+    fi
+}
+
+main() {
+    # Need 1 or 2 args: <push|pull> [--dry]
+    if (( $# < 1 || $# > 2 )); then
+        usage
+    fi
+
+    local action="$1"
+    local DRY_RUN=""
+
+    if (( $# == 2 )); then
+        if [[ "$2" == "--dry" ]]; then
+            DRY_RUN="--dry-run"
+        else
+            echo "Unknown option: $2"
+            usage
+        fi
+    fi
+
+    case "$action" in
+        push)
+            push_belasting "$DRY_RUN"
+            ;;
+        pull)
+            pull_belasting "$DRY_RUN"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+}
+
+main "$@"
+
