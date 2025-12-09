@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    local script_name
+    script_name="$(basename "$0")"
+    cat <<EOF
+Usage: $script_name <up|down>
+
+  up     brings VPN up
+
+  down   bring VPN down
+EOF
+    exit 1
+}
+
+main() {
+    if (( $# < 1 )); then
+        usage
+    fi
+
+    local action="$1"
+    
+    case "$action" in
+        up)
+            sudo wg-quick up /home/mc2/wireguard/wg0.conf
+            ;;
+        down)
+            sudo wg-quick down /home/mc2/wireguard/wg0.conf
+            ;;
+        *)
+            usage
+            ;;
+    esac
+}
+
+main "$@"
+
